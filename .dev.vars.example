@@ -1,0 +1,8 @@
+# Copy to .dev.vars locally. Never commit real secrets.
+AGNES_PRIMARY_ENABLED=false
+AGNES_API_KEY=replace-with-original-agnes-key
+AGNES_API_KEY_SECONDARY=replace-with-secondary-agnes-key
+AGNES_BASE_URL=https://apihub.agnes-ai.com/v1
+AGNES_MODEL=agnes-3.0-flash
+HUAJIBOT_BRIDGE_HMAC_SECRET=replace-with-a-random-shared-secret
+HUAJIBOT_ALLOWED_DESTINATIONS=[{"bridgeInstance":"main","robotId":"YOUR_BOT_ID","groupId":"YOUR_CANARY_GROUP_ID"}]

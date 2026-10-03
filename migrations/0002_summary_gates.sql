@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS summary_cooldowns (scope TEXT PRIMARY KEY, requested_at INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS summary_locks (scope TEXT PRIMARY KEY, run_id TEXT NOT NULL, expires_at INTEGER NOT NULL);
