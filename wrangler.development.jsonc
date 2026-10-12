@@ -1,0 +1,63 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "huaji-agent-development",
+  "compatibility_date": "2026-10-02",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "FlueHuajiAgent"
+      ]
+    },
+    {
+      "tag": "v2-debug-capture",
+      "new_sqlite_classes": [
+        "HuajiBotReplyCapture"
+      ]
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "HISTORY",
+      "database_name": "huaji-agent-development-history",
+      "database_id": "00000000-0000-0000-0000-000000000001",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "workflows": [
+    {
+      "name": "your-summary-workflow",
+      "binding": "SUMMARY_WORKFLOW",
+      "class_name": "DailySummaryWorkflow"
+    }
+  ],
+  "vars": {
+    "HUAJIBOT_VISION_MODEL": "cloudflare/@cf/meta/llama-4-scout-17b-16e-instruct",
+    "HUAJIBOT_MCP_URL": "https://your-worker.example/mcp",
+    "SUMMARY_ENABLED": "false",
+    "SUMMARY_MIN_MESSAGES": "10",
+    "AGNES_PRIMARY_ENABLED": "false",
+    "AGNES_BASE_URL": "https://apihub.agnes-ai.com/v1",
+    "AGNES_MODEL": "agnes-3.0-flash",
+    "HUAJIBOT_ALLOWED_DESTINATIONS": "[{\"bridgeInstance\":\"development\",\"robotId\":\"test-bot\",\"groupId\":\"test-group\"}]",
+    "HUAJIBOT_MAX_MESSAGE_BYTES": "32768",
+    "HUAJIBOT_MODEL": "cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    "HUAJIBOT_REPLY_TRANSPORT": "capture",
+    "HUAJIBOT_DEBUG_ENABLED": "true",
+    "HUAJIBOT_DEBUG_MODEL": "fixture"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "HUAJIBOT_REPLY_CAPTURES",
+        "class_name": "HuajiBotReplyCapture"
+      }
+    ]
+  }
+}

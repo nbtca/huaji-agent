@@ -19,7 +19,7 @@ const timestamp = Math.floor(Date.now() / 1000).toString();
 async function signed(payload = event, ts = timestamp, secret = env.HUAJIBOT_BRIDGE_HMAC_SECRET): Promise<Request> {
   const body = new TextEncoder().encode(JSON.stringify(payload));
   return new Request('https://agent.example/channels/huajibot/events', { method: 'POST', body,
-    headers: { 'X-HuaJiBot-Timestamp': ts, 'X-HuaJiBot-Signature': await signature(secret, ts, body) } });
+    headers: { 'Content-Type': 'application/json', 'X-HuaJiBot-Timestamp': ts, 'X-HuaJiBot-Signature': await signature(secret, ts, body) } });
 }
 function rejected(status: number) { return (error: unknown) => error instanceof IngressError && error.status === status; }
 
@@ -50,6 +50,13 @@ test('schema, event identity, destination, and conversation scope are validated'
 
 test('request size is bounded before JSON parsing or dispatch', async () => {
   await assert.rejects(verify(await signed(), { ...env, HUAJIBOT_MAX_MESSAGE_BYTES: '10' }), rejected(413));
+});
+
+test('explicit wrong Content-Type is permanent; missing legacy media type remains compatible', async () => {
+  const wrong = await signed(); wrong.headers.set('Content-Type', 'text/plain');
+  await assert.rejects(verify(wrong, env), rejected(415));
+  const legacy = await signed(); legacy.headers.delete('Content-Type');
+  assert.deepEqual(await verify(legacy, env), event);
 });
 
 test('same ingress retry retains a stable dispatch idempotency key', async () => {

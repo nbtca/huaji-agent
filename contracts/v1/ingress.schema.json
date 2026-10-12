@@ -1,0 +1,149 @@
+{
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "eventId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "conversationId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "destination": {
+      "type": "object",
+      "properties": {
+        "bridgeInstance": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "robotId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "groupId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        }
+      },
+      "required": [
+        "bridgeInstance",
+        "robotId",
+        "groupId"
+      ],
+      "additionalProperties": false
+    },
+    "kind": {
+      "enum": [
+        "chat",
+        "archive",
+        "summary"
+      ],
+      "type": "string",
+      "default": "chat"
+    },
+    "message": {
+      "type": "object",
+      "properties": {
+        "messageId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "senderId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "senderName": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "images": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "maxItems": 4,
+          "default": []
+        },
+        "observedAt": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "messageId",
+        "senderId",
+        "senderName",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "replyTo": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "messageId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            },
+            "senderId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "content": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "messageId",
+            "senderId",
+            "content"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "version",
+    "eventId",
+    "conversationId",
+    "destination",
+    "message",
+    "replyTo"
+  ],
+  "additionalProperties": false,
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HuaJiBot local v1 ingress"
+}

@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "eventId": "development:test-bot:test-group:root",
+  "conversationId": "huajibot:development:test-bot:test-group:root",
+  "destination": {
+    "bridgeInstance": "development",
+    "robotId": "test-bot",
+    "groupId": "test-group"
+  },
+  "kind": "chat",
+  "message": {
+    "messageId": "root",
+    "senderId": "test-user",
+    "senderName": "开发测试",
+    "text": "中文问题",
+    "images": [],
+    "observedAt": 1791763200000
+  },
+  "replyTo": null
+}

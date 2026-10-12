@@ -1,3 +1,4 @@
+import { createReplyPublisher } from '../replies/publisher.ts';
 import { defineTool } from '@flue/runtime';
 import * as v from 'valibot';
 import type { Bindings, InitialData } from '../contracts.ts';
@@ -11,7 +12,7 @@ export function replyToHuajiBot(ref: InitialData, messageId: string, env: Bindin
     async run({ data, toolCallId, step }) {
       return step.do('publish-reply', async () => {
         const job = await createReplyJob(ref, messageId, data.text, toolCallId, env);
-        await env.HUAJIBOT_OUTBOUND.send(JSON.stringify(job), { contentType: 'text' });
+        await createReplyPublisher(env).publish(job);
         return { output: { jobId: job.jobId, queued: true }, terminate: true };
       });
     },

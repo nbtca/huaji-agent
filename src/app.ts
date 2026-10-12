@@ -6,10 +6,14 @@ import { getCloudflareContext } from '@flue/runtime/cloudflare';
 import { cloudflareBindingProvider } from '@flue/runtime/cloudflare/workers-ai';
 import { routeModel } from './model-router.ts';
 import { mcp } from './mcp.ts';
+import { debug } from './debug/routes.ts';
+import { fixtureModel } from './debug/fixture-model.ts';
 
 setProvider(cloudflareBindingProvider({ binding: {
   async run(model, inputs, options) {
     const env = getCloudflareContext().env;
+    const fixture = fixtureModel(env as unknown as Bindings, inputs);
+    if (fixture) return fixture;
     const ai = env.AI as unknown as import('@flue/runtime/cloudflare/workers-ai').CloudflareAIBinding;
     return routeModel(env, model, inputs, options, (m, body, opts) => ai.run(m, body, opts), fetch,
       backend => console.info('HuaJiBot model backend: ' + backend));
@@ -19,5 +23,6 @@ setProvider(cloudflareBindingProvider({ binding: {
 const app = new Hono<{ Bindings: Bindings }>();
 app.route('/channels/huajibot', channel);
 app.route('/mcp', mcp);
+app.route('/debug', debug);
 app.get('/health', c => c.json({ ok: true }));
 export default app;

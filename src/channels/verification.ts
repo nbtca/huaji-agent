@@ -3,8 +3,8 @@ import { allowed, conversationPrefix, ingressSchema, maxBytes } from '../contrac
 import type { Bindings, IngressEvent } from '../contracts.ts';
 
 export class IngressError extends Error {
-  readonly status: 400 | 401 | 403 | 413;
-  constructor(status: 400 | 401 | 403 | 413) { super('Ingress rejected'); this.status = status; }
+  readonly status: 400 | 401 | 403 | 413 | 415;
+  constructor(status: 400 | 401 | 403 | 413 | 415) { super('Ingress rejected'); this.status = status; }
 }
 
 export async function signature(secret: string, timestamp: string, body: Uint8Array): Promise<string> {
@@ -17,7 +17,7 @@ export async function signature(secret: string, timestamp: string, body: Uint8Ar
   return 'v1=' + Array.from(new Uint8Array(mac), byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
-async function boundedBody(request: Request, limit: number): Promise<Uint8Array> {
+export async function boundedBody(request: Request, limit: number): Promise<Uint8Array> {
   const reader = request.body?.getReader();
   if (!reader) throw new IngressError(400);
   const chunks: Uint8Array[] = [];
@@ -38,6 +38,9 @@ async function boundedBody(request: Request, limit: number): Promise<Uint8Array>
 }
 
 export async function verifyBody(request: Request, env: Bindings, now = Date.now(), limit = maxBytes(env)): Promise<unknown> {
+  // Legacy bridge clients omit Content-Type. Preserve that compatibility, but reject an explicitly wrong media type.
+  const mediaType = request.headers.get('content-type')?.split(';')[0].trim().toLowerCase();
+  if (mediaType && mediaType !== 'application/json') throw new IngressError(415);
   if (!env.HUAJIBOT_BRIDGE_HMAC_SECRET) throw new Error('Missing HMAC secret');
   const timestamp = request.headers.get('X-HuaJiBot-Timestamp') ?? '';
   const supplied = request.headers.get('X-HuaJiBot-Signature') ?? '';

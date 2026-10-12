@@ -1,4 +1,5 @@
-import { dispatch, init } from '@flue/runtime';
+import { createReplyPublisher } from '../replies/publisher.ts';
+import { dispatch, init, SubmissionConflictError } from '@flue/runtime';
 import { Hono } from 'hono';
 import { Huaji } from '../agents/huaji.ts';
 import type { Bindings } from '../contracts.ts';
@@ -42,7 +43,7 @@ channel.post('/events', async c => {
       if (!day) throw new IngressError(400);
       if(!await manualSummaryAllowed(c.env,event.destination,event.message.senderId,event.eventId)) {
         const job=await createReplyJob({destination:event.destination,conversationId:event.conversationId,rootMessageId:event.message.messageId},event.message.messageId,'总结请求过于频繁，请10秒后重试。','summary-cooldown:'+event.eventId,c.env);
-        await c.env.HUAJIBOT_OUTBOUND.send(JSON.stringify(job),{contentType:'text'});
+        await createReplyPublisher(c.env).publish(job);
         return c.json({accepted:true,cooldown:true},202);
       }
       const id = await startSummary(c.env, { destination: event.destination, day, scheduled: false,
@@ -54,7 +55,7 @@ channel.post('/events', async c => {
     catch (error) {
       const job = await createReplyJob({ destination: event.destination, conversationId: event.conversationId, rootMessageId: event.message.messageId },
         event.message.messageId, error instanceof Error ? error.message : '图片读取失败', 'image-error:' + event.eventId, c.env);
-      await c.env.HUAJIBOT_OUTBOUND.send(JSON.stringify(job), { contentType: 'text' });
+      await createReplyPublisher(c.env).publish(job);
       return c.json({ accepted: true, imageRejected: true }, 202);
     }
     const receipt = await dispatch(Huaji, {
@@ -68,6 +69,7 @@ channel.post('/events', async c => {
     return c.json({ accepted: true, receipt }, 202);
   } catch (error) {
     if (error instanceof IngressError) return c.json({ error: 'Ingress rejected' }, error.status);
+    if (error instanceof SubmissionConflictError) return c.json({ error: 'Submission conflict' }, 409);
     // No payloads, signatures, or secrets in logs/responses; admission failure remains retryable.
     console.error('HuaJiBot admission failed');
     return c.json({ error: 'Admission unavailable' }, 503);

@@ -51,3 +51,21 @@ npm run deploy
 转发和回复使用持久状态与稳定标识；平台接受消息但尚未记录回执时发生崩溃，仍可能重复发送。回滚时保留归档与回执数据，不要修改已部署迁移的历史。
 
 项目通过单元测试、构建及真实接口验收；生产适配器的行为仍需部署者自行验证。
+
+## 协议与开发调试
+
+协议、JSON Schema、跨语言样例和签名向量见 [contracts/README.md](contracts/README.md)。`npm run check` 同时检查类型和协议产物是否漂移。
+
+`npm run test:runtime` 使用独立本地 D1、Durable Object 和模拟模型，验证签名入站、重复提交、Agent 回复工具与持久回复捕获；不访问模型服务、不向群聊发送消息。此测试不验证真实模型回答质量或 QQ 最终投递。
+
+交互调试时，在 `.dev.vars` 中设置至少 24 字符的 `HUAJIBOT_DEBUG_TOKEN` 和独立的 `HUAJIBOT_BRIDGE_HMAC_SECRET`，运行 `npm run dev:debug`，打开 `http://127.0.0.1:5173/debug`。首次运行先执行：
+
+```sh
+npx wrangler d1 migrations apply HISTORY --local --config wrangler.development.jsonc
+```
+
+调试页提供事件提交、执行状态与工具记录、按会话查看捕获回复和清空捕获区。Token 仅存于当前页面内存，回复作为纯文本呈现。捕获区保留最多 256 条、24 小时内的记录，读取/写入时清理过期数据。
+
+开发配置强制使用独立的 `wrangler.development.jsonc`，默认模拟模型。要测试真实模型，可在私有 `.dev.vars` 中清空 `HUAJIBOT_DEBUG_MODEL` 并配置 Agnes；如需 Workers AI 回退，应在独立开发配置中补充 AI binding。真实模型会消耗额度。
+
+生产环境默认使用 Queue，调试入口默认关闭。`capture` 需要显式开发开关和捕获绑定，调试 API 还需要独立 Bearer Token。不要把开发配置部署到生产实例。

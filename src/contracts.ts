@@ -17,12 +17,16 @@ export const initialDataSchema = v.strictObject({
 export type Destination = v.InferOutput<typeof destinationSchema>;
 export type IngressEvent = v.InferOutput<typeof ingressSchema>;
 export type InitialData = v.InferOutput<typeof initialDataSchema>;
-export type ReplyJob = {
-  version: 1; jobId: string; conversationId: string;
-  destination: Destination & { replyToMessageId: string };
-  content: { format: 'markdown'; text: string }; createdAt: string;
-  kind?: 'chat' | 'summary';
-};
+export const replyJobSchema = v.strictObject({
+  version: v.literal(1),
+  jobId: v.pipe(v.string(), v.minLength(1), v.maxLength(200)),
+  conversationId: id,
+  destination: v.strictObject({ ...destinationSchema.entries, replyToMessageId: id }),
+  content: v.strictObject({ format: v.literal('markdown'), text: v.pipe(v.string(), v.minLength(1)) }),
+  createdAt: v.pipe(v.string(), v.isoTimestamp()),
+  kind: v.optional(v.picklist(['chat', 'summary'])),
+});
+export type ReplyJob = v.InferOutput<typeof replyJobSchema>;
 
 export interface Bindings {
   AGNES_PRIMARY_ENABLED?: string;
@@ -35,6 +39,15 @@ export interface Bindings {
   HUAJIBOT_MAX_MESSAGE_BYTES: string;
   HUAJIBOT_MODEL: string;
   HUAJIBOT_OUTBOUND: Queue<string>;
+  HUAJIBOT_REPLY_TRANSPORT?: 'queue' | 'capture';
+  HUAJIBOT_DEBUG_ENABLED?: string;
+  HUAJIBOT_DEBUG_TOKEN?: string;
+  HUAJIBOT_DEBUG_MODEL?: string;
+  HUAJIBOT_REPLY_CAPTURES?: { getByName(name: string): {
+    capture(job: ReplyJob): Promise<void>;
+    list(conversationId?: string): Promise<ReplyJob[]>;
+    clear(): Promise<number>;
+  } };
   HISTORY?: D1Database;
   SUMMARY_WORKFLOW?: Workflow<import('./summary.ts').SummaryParams>;
   AI?: import('@flue/runtime/cloudflare/workers-ai').CloudflareAIBinding;

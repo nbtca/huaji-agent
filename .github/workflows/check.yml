@@ -1,5 +1,7 @@
-name: Check
+name: Worker checks
 on: [push, pull_request]
+permissions:
+  contents: read
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -13,3 +15,6 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: npm run build
+        env:
+          HUAJIBOT_WRANGLER_CONFIG: wrangler.jsonc
+      - run: npm run test:runtime

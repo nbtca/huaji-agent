@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "jobId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "conversationId": "huajibot:development:test-bot:test-group:root",
+  "destination": {
+    "bridgeInstance": "development",
+    "robotId": "test-bot",
+    "groupId": "test-group",
+    "replyToMessageId": "root"
+  },
+  "content": {
+    "format": "markdown",
+    "text": "中文回复"
+  },
+  "createdAt": "2026-10-12T00:00:00+00:00",
+  "kind": "chat"
+}

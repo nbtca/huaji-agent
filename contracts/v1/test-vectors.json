@@ -1,0 +1,22 @@
+{
+  "hmac": [
+    {
+      "secret": "public-test-secret-only",
+      "timestamp": "1791763200",
+      "body": "{\"text\":\"中文\"}",
+      "signature": "v1=616a031110382efc2fb59dde68e941b8031d3e98e1b01ab4e6a83df26d2abf0e"
+    },
+    {
+      "secret": "public-test-secret-only",
+      "timestamp": "1791763200",
+      "body": "{\"text\":\"line1\\nline2\",\"value\":1}",
+      "signature": "v1=cb0e1392168893429bc5a479a724bbbb2b89ccce1c9b9ffa479d72456c7210d1"
+    }
+  ],
+  "identifiers": [
+    {
+      "raw": "topic:!'()*中文",
+      "encoded": "topic%3A%21%27%28%29%2A%E4%B8%AD%E6%96%87"
+    }
+  ]
+}

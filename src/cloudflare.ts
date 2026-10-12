@@ -1,3 +1,5 @@
+export { HuajiBotReplyCapture } from './replies/capture.ts';
+import { createReplyPublisher } from './replies/publisher.ts';
 import { WorkflowEntrypoint } from 'cloudflare:workers';
 import type { WorkflowEvent, WorkflowStep } from 'cloudflare:workers';
 import type { Bindings } from './contracts.ts';
@@ -17,7 +19,7 @@ export class DailySummaryWorkflow extends WorkflowEntrypoint<Bindings, SummaryPa
     if(!claimed) {
       if(!params.scheduled)await step.do('publish-busy',async()=>{
         const job=await createReplyJob({destination:d,conversationId:params.conversationId,rootMessageId:params.replyToMessageId},params.replyToMessageId,'上一条总结仍在进行中，请稍后重试。',event.instanceId,env);
-        await env.HUAJIBOT_OUTBOUND.send(JSON.stringify(job),{contentType:'text'});
+        await createReplyPublisher(env).publish(job);
       });
       return {blocked:true};
     }
@@ -67,7 +69,7 @@ export class DailySummaryWorkflow extends WorkflowEntrypoint<Bindings, SummaryPa
       const job = await createReplyJob({ destination: d, conversationId: params.conversationId, rootMessageId: params.replyToMessageId },
         params.replyToMessageId, `📊 **每日聊天总结** (${params.day})\n\n${summary}`, event.instanceId, env);
       job.kind = 'summary';
-      await env.HUAJIBOT_OUTBOUND.send(JSON.stringify(job), { contentType: 'text' });
+      await createReplyPublisher(env).publish(job);
       await env.HISTORY!.prepare('INSERT OR REPLACE INTO summary_runs VALUES (?,?,?,?,?)').bind(event.instanceId,d.groupId,params.day,'queued',Date.now()).run();
     });
     return { queued: true, count };
