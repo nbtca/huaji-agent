@@ -3,6 +3,21 @@ import { test } from 'node:test';
 import { normalizeWorkersAiInput } from '../src/workers-ai-input.ts';
 
 const model = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+test('malformed previous reply calls do not abort fallback or pretend a reply was delivered', () => {
+  for (const argumentsText of ['{}', '{"text":null}', '{"text":" "}', 'null', 'not-json']) {
+    const input = { messages: [
+      { role: 'user', content: [{ type: 'image_url', image_url: { url: 'data:image/png;base64,test' } }, { type: 'text', text: 'identify this logo' }] },
+      { role: 'assistant', tool_calls: [{ function: { name: 'reply_to_huajibot', arguments: argumentsText } }] },
+      { role: 'tool', content: 'Tool input validation failed' },
+    ] };
+    const original = structuredClone(input);
+    const result = normalizeWorkersAiInput('@cf/meta/llama-4-scout-17b-16e-instruct', input);
+    assert.deepEqual((result.messages as unknown[])[0], input.messages[0]);
+    assert.match((result.messages as { content: string }[])[1].content, /不代表消息已发送/);
+    assert.equal((result.messages as unknown[]).length, 3);
+    assert.deepEqual(input, original);
+  }
+});
 test('follow-up preserves the visible reply while projecting send-tool history to text', () => {
   const input = { tools: [{ name: 'reply_to_huajibot' }], messages: [
     { role: 'system', content: [{ type: 'text', text: 'instructions' }] },

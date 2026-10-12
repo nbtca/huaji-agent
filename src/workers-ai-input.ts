@@ -17,8 +17,10 @@ export function normalizeWorkersAiInput(model: string, input: Record<string, unk
     if (message.role === 'assistant' && Array.isArray(message.tool_calls)) {
       const replies = message.tool_calls.map((call: { function: { name: string; arguments: string } }) => {
         if (call.function.name !== 'reply_to_huajibot') return '调用工具 ' + call.function.name + '：' + call.function.arguments;
-        const args = JSON.parse(call.function.arguments);
-        if (typeof args.text !== 'string') throw new Error('Invalid historical reply text');
+        let args: unknown;
+        try { args = JSON.parse(call.function.arguments); } catch { /* Failed tool input must remain recoverable. */ }
+        if (!args || typeof args !== 'object' || !('text' in args) || typeof args.text !== 'string' || !args.text.trim())
+          return '尝试调用 reply_to_huajibot，但参数没有有效的 text；这次调用不代表消息已发送，请使用正确参数重新调用。';
         return args.text;
       });
       message.content = [message.content, ...replies].filter(Boolean).join('\n');
