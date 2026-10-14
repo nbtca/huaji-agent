@@ -1,20 +1,29 @@
 # huaji-agent
 
-基于 Flue 的 Cloudflare Worker AI Agent，与 HuaJiBot.NET 的消息适配层独立运行。
+A Flue-based Cloudflare Worker AI agent that runs independently of the HuaJiBot.NET message adapter.
 
-## 功能
+## Features
 
-- 文字对话、图片识别与引用追问。
-- MCP 网页搜索和结构化天气查询。
-- D1 群聊归档、每日总结与手动总结。
-- Agnes 优先调用，限速或额度耗尽时尝试备用 Key，再切换 Workers AI。
-- 签名入口、持久会话、Queue 回复与发送去重。
+- Text chat, image recognition, and quoted follow-up questions.
+- MCP web search and structured weather lookup.
+- D1 group-chat archive, daily summaries, and manual summary commands.
+- Agnes is called first; on rate limiting or quota exhaustion it tries the secondary key, then falls back to Workers AI.
+- Signed ingress, persistent conversations, Queue-based replies, and send de-duplication.
 
-`总结` 默认总结昨天；支持今／昨／前 + 天／日，中间可加空格，例如 `总结今日`、`总结 昨 天`。
+The summary command defaults to yesterday. It accepts 今／昨／前 combined with 天／日, optionally separated by spaces, for example `总结今日` or `总结 昨 天`.
 
-## 本地开发
+## Relationship to HuaJiBot.NET
 
-要求 Node.js 22.19 或更新版本。
+This repository contains no bot code and has no build-time dependency on HuaJiBot.NET. The split is:
+
+- **huaji-agent (this Worker)** owns the model routing, tools, image handling, conversation state, D1 archive, and summary generation.
+- **HuaJiBot.NET** owns platform adapters and delivery. Its `FlueBridge` plugin signs and posts ingress events to this Worker and consumes reply jobs from a Cloudflare Queue.
+
+The only shared artifact is the versioned protocol in `contracts/v1`. `scripts/sync-bridge-contracts.ts` copies those files into the bot's unit-test fixtures (`src/HuaJiBot.NET.UnitTest/TestData/AgentProtocol`) and can verify them with `--check`; set `HUAJIBOT_REPO_PATH` to a HuaJiBot.NET checkout to use it. Changing wire fields, the HMAC preimage, or job IDs requires updating both sides together.
+
+## Local development
+
+Requires Node.js 22.19 or newer.
 
 ```sh
 npm ci
@@ -23,49 +32,49 @@ npm test
 npm run dev
 ```
 
-复制 `.dev.vars.example` 为 `.dev.vars`，配置本地测试变量。不要提交真实凭据。
+Copy `.dev.vars.example` to `.dev.vars` and fill in your local test values. Never commit real credentials.
 
-## 部署
+## Deployment
 
-`wrangler.jsonc` 是通用模板：填写自己的 Queue、D1 和 Workflow 配置。默认目标白名单为空，定时总结关闭。
+`wrangler.jsonc` is a generic template: supply your own Queue, D1, and Workflow settings. The destination allowlist is empty by default and scheduled summaries are disabled.
 
-生产环境可将模板复制为 **Git 忽略的** `wrangler.local.jsonc`。存在该文件时，构建会自动使用它；也可通过 `HUAJIBOT_WRANGLER_CONFIG` 指定配置路径。
+For production, copy the template to `wrangler.local.jsonc`, which Git ignores. When that file exists the build uses it automatically; `HUAJIBOT_WRANGLER_CONFIG` can point to a different configuration path.
 
 ```sh
 npx wrangler secret put HUAJIBOT_BRIDGE_HMAC_SECRET
 npx wrangler secret put HUAJIBOT_MCP_TOKEN
 npx wrangler secret put AGNES_API_KEY
-# 可选备用 Key
+# Optional secondary key
 npx wrangler secret put AGNES_API_KEY_SECONDARY
 npm run deploy
 ```
 
-机器人端使用相同的 HMAC Secret，并单独配置其账户范围 Queue API Token。MCP 接口需要 Bearer 鉴权。真实账户、群组和生产地址应只保存在私有配置中。
+The bot side uses the same HMAC secret and configures its own account-scoped Queue API token. The MCP endpoint requires Bearer authentication. Real accounts, group IDs, and production URLs belong in private configuration only.
 
-## 验证与数据
+## Verification and data
 
-远程验收脚本从环境变量读取 Worker URL、资源 ID 和测试目标，见 `tests/remote-config.ts`。验收应使用隔离目标，并避免与机器人消费者争抢 Queue 消息。
+Remote acceptance scripts read the Worker URL, resource IDs, and test targets from environment variables; see `tests/remote-config.ts`. Run acceptance against isolated targets and avoid competing with the bot consumer for Queue messages.
 
-图片只接受受支持的 HTTPS 来源，拒绝私有地址和重定向。天气数据来自 Open-Meteo 模型估计与预报，并非气象站实测。
+Images are accepted only from supported HTTPS origins; private addresses and redirects are rejected. Weather data comes from Open-Meteo model estimates and forecasts rather than weather-station observations.
 
-转发和回复使用持久状态与稳定标识；平台接受消息但尚未记录回执时发生崩溃，仍可能重复发送。回滚时保留归档与回执数据，不要修改已部署迁移的历史。
+Forwarding and replies rely on persistent state and stable identifiers. If a crash occurs after the platform accepted a message but before the receipt was recorded, a duplicate send is still possible. When rolling back, keep archive and receipt data and do not rewrite the history of migrations that have already been applied.
 
-项目通过单元测试、构建及真实接口验收；生产适配器的行为仍需部署者自行验证。
+The project passes unit tests, builds, and real-endpoint acceptance. Behavior of the production adapter still has to be verified by whoever deploys it.
 
-## 协议与开发调试
+## Protocol and development debugging
 
-协议、JSON Schema、跨语言样例和签名向量见 [contracts/README.md](contracts/README.md)。`npm run check` 同时检查类型和协议产物是否漂移。
+The protocol, JSON Schemas, cross-language examples, and signature vectors live in [contracts/README.md](contracts/README.md). `npm run check` verifies types and also fails when generated protocol artifacts drift.
 
-`npm run test:runtime` 使用独立本地 D1、Durable Object 和模拟模型，验证签名入站、重复提交、Agent 回复工具与持久回复捕获；不访问模型服务、不向群聊发送消息。此测试不验证真实模型回答质量或 QQ 最终投递。
+`npm run test:runtime` exercises an isolated local D1, Durable Objects, and a fixture model to cover signed ingress, duplicate submission, the agent reply tool, and persistent reply capture. It never calls a model service and never sends group messages, so it does not validate real model answer quality or final QQ delivery.
 
-交互调试时，在 `.dev.vars` 中设置至少 24 字符的 `HUAJIBOT_DEBUG_TOKEN` 和独立的 `HUAJIBOT_BRIDGE_HMAC_SECRET`，运行 `npm run dev:debug`，打开 `http://127.0.0.1:5173/debug`。首次运行先执行：
+For interactive debugging, set `HUAJIBOT_DEBUG_TOKEN` (at least 24 characters) and a separate `HUAJIBOT_BRIDGE_HMAC_SECRET` in `.dev.vars`, run `npm run dev:debug`, and open `http://127.0.0.1:5173/debug`. On the first run, execute:
 
 ```sh
 npx wrangler d1 migrations apply HISTORY --local --config wrangler.development.jsonc
 ```
 
-调试页提供事件提交、执行状态与工具记录、按会话查看捕获回复和清空捕获区。Token 仅存于当前页面内存，回复作为纯文本呈现。捕获区保留最多 256 条、24 小时内的记录，读取/写入时清理过期数据。
+The debug page can submit events, inspect execution status and tool records, read captured replies per conversation, and clear the capture store. The token stays in the memory of the current page only, and replies render as plain text. Capture keeps at most 256 records within 24 hours and expires old entries on read and write.
 
-开发配置强制使用独立的 `wrangler.development.jsonc`，默认模拟模型。要测试真实模型，可在私有 `.dev.vars` 中清空 `HUAJIBOT_DEBUG_MODEL` 并配置 Agnes；如需 Workers AI 回退，应在独立开发配置中补充 AI binding。真实模型会消耗额度。
+The development configuration always uses the separate `wrangler.development.jsonc` and defaults to the fixture model. To test real models, clear `HUAJIBOT_DEBUG_MODEL` in your private `.dev.vars` and configure Agnes; add an AI binding to the development configuration if you also want the Workers AI fallback. Real models consume quota.
 
-生产环境默认使用 Queue，调试入口默认关闭。`capture` 需要显式开发开关和捕获绑定，调试 API 还需要独立 Bearer Token。不要把开发配置部署到生产实例。
+Production uses Queue delivery and keeps debug ingress disabled by default. `capture` transport requires an explicit development switch plus the capture binding, and the debug API requires its own Bearer token. Do not deploy the development configuration to a production instance.
