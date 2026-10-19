@@ -8,7 +8,7 @@ import { routeModel } from './model-router.ts';
 import { createReplyJob } from './tools/reply-job.ts';
 import { briefPrompt, textChunks, startSummary, scheduledParams, claimSummary, summaryScope } from './summary.ts';
 import type { SummaryParams } from './summary.ts';
-import { chinaDay } from './history.ts';
+import { chinaDay, historyPage } from './history.ts';
 
 export class DailySummaryWorkflow extends WorkflowEntrypoint<Bindings, SummaryParams> {
   async run(event: WorkflowEvent<SummaryParams>, step: WorkflowStep) {
@@ -47,8 +47,8 @@ export class DailySummaryWorkflow extends WorkflowEntrypoint<Bindings, SummaryPa
       const parts: string[] = []; let cursorTime = -1, cursorId = '',pending='';
       for (let page = 0; ; page++) {
         const rows = await step.do('history-page-' + page, async () => {
-          const result = await env.HISTORY!.prepare('SELECT message_id,sender_name,text,observed_at FROM group_messages WHERE bridge=? AND robot=? AND chat=? AND day=? AND observed_at<=? AND (observed_at>? OR (observed_at=? AND message_id>?)) ORDER BY observed_at,message_id LIMIT 20')
-            .bind(d.bridgeInstance,d.robotId,d.groupId,params.day,event.timestamp.getTime(),cursorTime,cursorTime,cursorId).all<{ message_id: string; sender_name: string; text: string; observed_at: number }>();
+          const result = await env.HISTORY!.prepare(historyPage)
+            .bind(d.bridgeInstance,d.robotId,d.groupId,params.day,event.timestamp.getTime(),cursorTime,cursorId).all<{ message_id: string; sender_name: string; text: string; observed_at: number }>();
           return result.results;
         });
         if (!rows.length) break;
