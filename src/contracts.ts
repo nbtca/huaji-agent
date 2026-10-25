@@ -28,6 +28,28 @@ export const replyJobSchema = v.strictObject({
 });
 export type ReplyJob = v.InferOutput<typeof replyJobSchema>;
 
+export const commandIds = ["help", "schedule", "next", "mc", "events", "tickets", "summary"] as const;
+export const commandIdSchema = v.picklist(commandIds);
+export const commandArgumentsSchema = v.record(
+  v.string(),
+  v.union([v.string(), v.number(), v.boolean(), v.null()])
+);
+export const commandJobSchema = v.strictObject({
+  version: v.literal(2),
+  jobId: v.pipe(v.string(), v.minLength(1), v.maxLength(200)),
+  conversationId: id,
+  destination: v.strictObject({ ...destinationSchema.entries, replyToMessageId: id }),
+  kind: v.literal("command"),
+  senderId: id,
+  senderName: v.string(),
+  command: v.strictObject({
+    id: commandIdSchema,
+    arguments: v.optional(commandArgumentsSchema, {}),
+  }),
+  createdAt: v.pipe(v.string(), v.isoTimestamp()),
+});
+export type CommandJob = v.InferOutput<typeof commandJobSchema>;
+
 export interface Bindings {
   AGNES_PRIMARY_ENABLED?: string;
   AGNES_API_KEY?: string;

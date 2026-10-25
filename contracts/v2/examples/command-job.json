@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "jobId": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "conversationId": "huajibot:development:test-bot:test-group:root",
+  "destination": {
+    "bridgeInstance": "development",
+    "robotId": "test-bot",
+    "groupId": "test-group",
+    "replyToMessageId": "root"
+  },
+  "kind": "command",
+  "senderId": "user",
+  "senderName": "Alice",
+  "command": {
+    "id": "schedule",
+    "arguments": {
+      "weeks": 2
+    }
+  },
+  "createdAt": "2026-10-12T00:00:00+00:00"
+}
