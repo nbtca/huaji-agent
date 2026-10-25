@@ -1,0 +1,123 @@
+{
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 2
+    },
+    "jobId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "conversationId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "destination": {
+      "type": "object",
+      "properties": {
+        "bridgeInstance": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "robotId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "groupId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "replyToMessageId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        }
+      },
+      "required": [
+        "bridgeInstance",
+        "robotId",
+        "groupId",
+        "replyToMessageId"
+      ],
+      "additionalProperties": false
+    },
+    "kind": {
+      "const": "command"
+    },
+    "senderId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "senderName": {
+      "type": "string"
+    },
+    "command": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "enum": [
+            "help",
+            "schedule",
+            "next",
+            "mc",
+            "events",
+            "tickets",
+            "summary"
+          ],
+          "type": "string"
+        },
+        "arguments": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "default": {}
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "version",
+    "jobId",
+    "conversationId",
+    "destination",
+    "kind",
+    "senderId",
+    "senderName",
+    "command",
+    "createdAt"
+  ],
+  "additionalProperties": false,
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HuaJiBot local v2 command-job"
+}

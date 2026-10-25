@@ -12,6 +12,12 @@ A Flue-based Cloudflare Worker AI agent that runs independently of the HuaJiBot.
 
 The summary command defaults to yesterday. It accepts 今／昨／前 combined with 天／日, optionally separated by spaces, for example `总结今日` or `总结 昨 天`.
 
+## Natural-language user commands
+
+Exact commands continue to be handled by HuaJiBot.NET. When a user mentions the bot, replies to a bot message, or otherwise starts an agent conversation, the agent can map a natural-language request to a structured `run_huajibot_command` call. The current command catalog is `help`, `schedule`, `next`, `mc`, `events`, `tickets`, and `summary`.
+
+`summary` is executed by the Worker summary Workflow. The other commands are published as `command` jobs to the shared Cloudflare Queue and executed by the bot, where group configuration, cooldowns, and administrator checks remain authoritative. Command IDs and argument shapes are allowlisted; the agent cannot execute arbitrary functions or pass raw shell text.
+
 ## Relationship to HuaJiBot.NET
 
 This repository contains no bot code and has no build-time dependency on HuaJiBot.NET. The split is:
